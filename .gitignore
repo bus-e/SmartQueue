@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+.env
+# Flutter
+client/.dart_tool/
+client/build/
+client/.flutter-plugins*
+client/pubspec.lock
+.DS_Store
+.mypy_cache/
+.ruff_cache/
