@@ -19,9 +19,3 @@ cd server
 pip install -r requirements-dev.txt
 pytest
 ```
-
-## Работа с репозиторием
-
-- main — рабочая версия
-- новая задача — новая ветка, потом pull request
-- пароли и токены в .env, не коммитим
