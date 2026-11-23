@@ -17,4 +17,16 @@ jobs:
           python-version: "3.12"
       - run: pip install -r requirements-dev.txt
       - run: pytest
-
+  client:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test

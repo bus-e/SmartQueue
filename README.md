@@ -34,3 +34,13 @@ cd server
 pip install -r requirements-dev.txt
 pytest
 ```
+
+Клиент (Flutter):
+
+```
+cd client
+flutter create . --platforms=web,android
+flutter pub get
+flutter test
+flutter run -d chrome --dart-define=API_URL=http://localhost:8080
+```
