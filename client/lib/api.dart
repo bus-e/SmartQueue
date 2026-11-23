@@ -95,4 +95,7 @@ class ApiClient {
     final r = await _http.patch(_uri('/entries/$entryId'), headers: _headers, body: jsonEncode({'status': status}));
     return _map(_read(r));
   }
+
+  /// Адрес WebSocket очереди: сервер сообщает, что очередь изменилась.
+  Uri events(String code) => Uri.parse('${baseUrl.replaceFirst('http', 'ws')}/api/v1/ws/queues/$code');
 }

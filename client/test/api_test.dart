@@ -80,4 +80,9 @@ void main() {
     )..guestToken = 't';
     expect((await api.setStatus(7, 'served'))['status'], 'served');
   });
+
+  test('адрес WebSocket строится из адреса сервера', () {
+    expect(ApiClient(baseUrl: 'https://sq.example').events('K7M2QX').toString(), 'wss://sq.example/api/v1/ws/queues/K7M2QX');
+    expect(ApiClient(baseUrl: 'http://localhost:8080').events('K7M2QX').scheme, 'ws');
+  });
 }

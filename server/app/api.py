@@ -7,12 +7,13 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
 from datetime import datetime
 from typing import Literal, Optional
 from urllib.parse import unquote
 
-from fastapi import APIRouter, Depends, Header, Request
+from fastapi import APIRouter, Depends, Header, Request, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, Field
 
 from app.domain.model import (
@@ -256,6 +257,37 @@ def call_next(code: str, user: User = Depends(current_user), s: MemoryStore = De
             raise NotFound("В очереди никого нет")
         s.sync(q)
         return entry_view(s, q, e, user, True)
+
+
+# ---------------------------------------------------------------- WebSocket
+@router.websocket("/ws/queues/{code}")
+async def queue_events(ws: WebSocket, code: str) -> None:
+    """Сообщает, что очередь изменилась: {event: position | closed, waiting}.
+    Личных данных нет — клиент после события сам запрашивает своё место."""
+    s: MemoryStore = ws.app.state.store
+    await ws.accept()
+    seen = -1
+    try:
+        while True:
+            with s.tx():
+                q = s.queue(code)
+                version, closed, waiting = (
+                    s.version.get(q.code.value, 0),
+                    q.status.value == "closed",
+                    len(q.waiting()),
+                )
+            if version != seen:
+                seen = version
+                await ws.send_json({"event": "closed" if closed else "position", "waiting": waiting})
+                if closed:
+                    await ws.close()
+                    return
+            await asyncio.sleep(0.3)
+    except NotFound as e:
+        await ws.send_json({"event": "error", "message": str(e)})
+        await ws.close()
+    except WebSocketDisconnect:
+        return
 
 
 __all__ = ["router", "Unauthorized", "Forbidden"]

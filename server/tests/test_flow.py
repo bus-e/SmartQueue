@@ -223,3 +223,20 @@ def test_notifications_go_to_outbox(client):
     kinds = [(o.notice.type.value, o.entry_id) for o in store.outbox]
     assert ("first", me(client, code, igor)["id"]) in kinds
     assert ("n_ahead", me(client, code, ilya)["id"]) in kinds  # N = 2: перед Ильёй двое
+
+
+# ---------------------------------------------------------------- З11: WebSocket
+def test_websocket_reports_changes(client):
+    egor, igor = guest(client, "Егор"), guest(client, "Игорь")
+    code = create(client, egor)
+    with client.websocket_connect(f"/api/v1/ws/queues/{code}") as ws:
+        assert ws.receive_json() == {"event": "position", "waiting": 1}  # текущее состояние сразу
+        client.post(f"/api/v1/queues/{code}/entries", json={}, headers=igor)
+        assert ws.receive_json() == {"event": "position", "waiting": 2}
+        client.patch(f"/api/v1/queues/{code}", json={"status": "closed"}, headers=egor)
+        assert ws.receive_json()["event"] == "closed"
+
+
+def test_websocket_unknown_queue(client):
+    with client.websocket_connect("/api/v1/ws/queues/K7M2QX") as ws:
+        assert ws.receive_json()["event"] == "error"

@@ -65,6 +65,7 @@ class MemoryStore:
         self._gid: dict[tuple[str, int], int] = {}  # (код, номер записи в очереди) -> id записи в API
         self._local: dict[int, tuple[str, int]] = {}
         self.outbox: list[Outgoing] = []
+        self.version: dict[str, int] = {}  # счётчик изменений очереди — для рассылки по WebSocket
 
     @contextmanager
     def tx(self) -> Iterator[MemoryStore]:
@@ -148,7 +149,8 @@ class MemoryStore:
         return q, q.get(key[1])
 
     def sync(self, q: Queue) -> None:
-        """После изменения: выдать id новым записям и забрать уведомления в журнал."""
+        """После изменения: выдать id новым записям, забрать уведомления в журнал, отметить новую версию."""
+        self.version[q.code.value] = self.version.get(q.code.value, 0) + 1
         for e in q.entries:
             self.entry_id(q, e)
         for n in q.drain_notices():

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../api.dart';
 import '../queue_code.dart';
@@ -8,10 +9,11 @@ import '../session.dart';
 import '../theme.dart';
 import '../widgets/dot_number.dart';
 
-/// «Моё место»: номер из точек, кто в очереди, кнопки. Обновляется каждые 2 секунды —
-/// так позиция меняется не позже чем через 2 с после действия на любой платформе (тест Т4).
+/// «Моё место»: номер из точек, кто в очереди, кнопки.
+/// Сервер по WebSocket сообщает об изменении очереди — место обновляется сразу (тест Т4: не позже 2 с).
+/// Если соединение оборвалось, место обновляется опросом раз в 10 секунд.
 class PositionScreen extends StatefulWidget {
-  const PositionScreen({super.key, required this.api, required this.code, this.refresh = const Duration(seconds: 2)});
+  const PositionScreen({super.key, required this.api, required this.code, this.refresh = const Duration(seconds: 10)});
 
   final ApiClient api;
   final String code;
@@ -27,17 +29,31 @@ class _PositionScreenState extends State<PositionScreen> {
   List<Map<String, dynamic>> _entries = const [];
   String? _error;
   Timer? _timer;
+  WebSocketChannel? _ws;
+  StreamSubscription<dynamic>? _events;
 
   @override
   void initState() {
     super.initState();
     _load();
+    _listen();
     _timer = Timer.periodic(widget.refresh, (_) => _load());
+  }
+
+  void _listen() {
+    try {
+      _ws = WebSocketChannel.connect(widget.api.events(widget.code));
+      _events = _ws!.stream.listen((_) => _load(), onError: (_) {}, cancelOnError: true);
+    } catch (_) {
+      // без WebSocket остаётся опрос
+    }
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _events?.cancel();
+    _ws?.sink.close();
     super.dispose();
   }
 
