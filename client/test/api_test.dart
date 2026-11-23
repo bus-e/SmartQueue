@@ -50,7 +50,7 @@ void main() {
       client: MockClient((request) async {
         calls.add('${request.method} ${request.url.path} ${request.headers['X-Guest-Token'] ?? '-'}');
         if (request.url.path.endsWith('/auth/guest')) {
-          return http.Response(jsonEncode({'token': 't1', 'user': {'id': 'u1', 'name': 'Мария'}}), 201);
+          return http.Response.bytes(utf8.encode(jsonEncode({'token': 't1', 'user': {'id': 'u1', 'name': 'Мария'}})), 201);
         }
         return http.Response(jsonEncode({'id': 3, 'position': 2}), 201);
       }),
