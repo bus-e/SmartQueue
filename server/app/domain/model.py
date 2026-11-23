@@ -216,6 +216,12 @@ class Queue:
         first = self.first_waiting()
         return {first.participant} if first and first.participant else set()
 
+    def take_over_at(self) -> datetime | None:
+        """С какого момента второй может забрать управление у первого (обычная очередь)."""
+        if self.type is not QueueType.REGULAR or self._first_since is None or len(self.waiting()) < 2:
+            return None
+        return self._first_since + TAKEOVER_AFTER
+
     def get(self, entry_id: int) -> Entry:
         for e in self.entries:
             if e.id == entry_id:

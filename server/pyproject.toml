@@ -9,9 +9,12 @@ target-version = "py39"    # локально Python 3.9, в Docker и CI — 3.
 # E, W — стиль; F — ошибки (неиспользуемое, неопределённое); I — порядок импортов;
 # B — частые ошибки; UP — устаревший синтаксис
 select = ["E", "W", "F", "I", "B", "UP"]
+# B008: Depends(...) в параметрах — так устроен FastAPI
+ignore = ["B008"]
 
 [tool.ruff.lint.per-file-ignores]
 "migrations/*" = ["E501"]   # длинные строки SQL
+"app/api.py" = ["UP045"]    # Optional[...]: модели pydantic разбираются при запуске, а локально Python 3.9
 
 [tool.mypy]
 ignore_missing_imports = true
