@@ -18,9 +18,21 @@ services:
     build: ./server
     environment:
       DATABASE_URL: postgresql+psycopg://smartqueue:${POSTGRES_PASSWORD:-smartqueue}@db:5432/smartqueue
+      BOT_KEY: ${BOT_KEY:?задайте BOT_KEY в .env}
     depends_on:
       db:
         condition: service_healthy
+
+  # Бот запускается, только если в .env задан TELEGRAM_BOT_TOKEN: docker compose --profile bot up
+  bot:
+    build: ./bot
+    profiles: ["bot"]
+    environment:
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      BOT_KEY: ${BOT_KEY}
+      API_URL: http://api:8000
+    depends_on:
+      - api
 
   nginx:
     image: nginx:1.27

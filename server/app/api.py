@@ -109,6 +109,7 @@ def entry_view(s: MemoryStore, q: Queue, e: Entry, user: User | None, show_names
     take_at: datetime | None = q.take_over_at()
     return {
         "id": s.entry_id(q, e),
+        "code": q.code.value,
         "number": e.number,
         "status": e.status.value,
         "position": pos,
@@ -119,6 +120,7 @@ def entry_view(s: MemoryStore, q: Queue, e: Entry, user: User | None, show_names
         "is_me": mine,
         "can_next": mine and pos == 1 and q.type is QueueType.REGULAR,
         "take_over_at": take_at.isoformat() if mine and pos == 2 and take_at else None,
+        "first_id": s.entry_id(q, q.waiting()[0]) if mine and pos == 2 and take_at else None,
     }
 
 

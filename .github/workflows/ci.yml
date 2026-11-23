@@ -23,6 +23,24 @@ jobs:
           mypy app
       - run: pytest
 
+  bot:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bot
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-dev.txt
+      - name: Статический анализ
+        run: |
+          ruff check .
+          ruff format --check .
+          mypy smartqueue_bot
+      - run: pytest
+
   client:
     runs-on: ubuntu-latest
     defaults:
