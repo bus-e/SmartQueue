@@ -42,4 +42,42 @@ void main() {
     )..guestToken = 'abc';
     expect((await api.join('K7M2QX', 'Мария'))['position'], 5);
   });
+
+  test('вход гостем сохраняет токен для следующих запросов', () async {
+    final calls = <String>[];
+    final api = ApiClient(
+      baseUrl: 'http://test',
+      client: MockClient((request) async {
+        calls.add('${request.method} ${request.url.path} ${request.headers['X-Guest-Token'] ?? '-'}');
+        if (request.url.path.endsWith('/auth/guest')) {
+          return http.Response(jsonEncode({'token': 't1', 'user': {'id': 'u1', 'name': 'Мария'}}), 201);
+        }
+        return http.Response(jsonEncode({'id': 3, 'position': 2}), 201);
+      }),
+    );
+    expect((await api.join('K7M2QX', 'Мария'))['position'], 2);
+    expect(calls, ['POST /api/v1/auth/guest -', 'POST /api/v1/queues/K7M2QX/entries t1']);
+  });
+
+  test('me: 404 значит «не в очереди»', () async {
+    final api = ApiClient(
+      baseUrl: 'http://test',
+      client: MockClient((request) async => http.Response.bytes(
+          utf8.encode(jsonEncode({'error': {'code': 'NotFound', 'message': 'Вы не стоите в этой очереди'}})), 404)),
+    )..guestToken = 't';
+    expect(await api.me('K7M2QX'), isNull);
+  });
+
+  test('«Следующий» — PATCH записи со статусом served', () async {
+    final api = ApiClient(
+      baseUrl: 'http://test',
+      client: MockClient((request) async {
+        expect(request.method, 'PATCH');
+        expect(request.url.path, '/api/v1/entries/7');
+        expect(jsonDecode(request.body), {'status': 'served'});
+        return http.Response(jsonEncode({'id': 7, 'status': 'served'}), 200);
+      }),
+    )..guestToken = 't';
+    expect((await api.setStatus(7, 'served'))['status'], 'served');
+  });
 }

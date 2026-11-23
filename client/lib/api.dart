@@ -40,19 +40,59 @@ class ApiClient {
     return body;
   }
 
+  Map<String, dynamic> _map(dynamic body) => Map<String, dynamic>.from(body as Map);
+
   Future<bool> health() async {
     final body = _read(await _http.get(_uri('/health'), headers: _headers));
     return body is Map && body['status'] == 'ok';
   }
 
-  /// Очередь по коду: название, тип, статус, длина.
-  Future<Map<String, dynamic>> queue(String code) async =>
-      Map<String, dynamic>.from(_read(await _http.get(_uri('/queues/$code'), headers: _headers)) as Map);
+  /// Вход без регистрации: сервер выдаёт токен гостя по имени.
+  Future<String> guest(String name) async {
+    final r = await _http.post(_uri('/auth/guest'), headers: _headers, body: jsonEncode({'name': name}));
+    guestToken = _map(_read(r))['token'] as String;
+    return guestToken!;
+  }
 
-  /// Встать в очередь. Повторный вызов возвращает уже существующую запись.
+  /// Очередь по коду: название, тип, статус, сколько ждут.
+  Future<Map<String, dynamic>> queue(String code) async =>
+      _map(_read(await _http.get(_uri('/queues/$code'), headers: _headers)));
+
+  /// Создать очередь. Создатель обычной очереди сразу стоит первым.
+  Future<Map<String, dynamic>> createQueue(String title, {String type = 'regular', int notifyBefore = 2}) async {
+    final r = await _http.post(_uri('/queues'),
+        headers: _headers,
+        body: jsonEncode({'title': title, 'type': type, 'notify_before': notifyBefore, 'source': 'site'}));
+    return _map(_read(r));
+  }
+
+  /// Встать в очередь. Без токена сначала входим гостем с этим именем.
+  /// Повторный вызов возвращает уже существующую запись.
   Future<Map<String, dynamic>> join(String code, String name) async {
-    final r = await _http.post(_uri('/queues/$code/entries'),
-        headers: _headers, body: jsonEncode({'name': name, 'source': 'site'}));
-    return Map<String, dynamic>.from(_read(r) as Map);
+    if (guestToken == null) await guest(name);
+    final r = await _http.post(_uri('/queues/$code/entries'), headers: _headers, body: jsonEncode({'source': 'site'}));
+    return _map(_read(r));
+  }
+
+  /// Моя запись и позиция; null — я не стою в этой очереди.
+  Future<Map<String, dynamic>?> me(String code) async {
+    try {
+      return _map(_read(await _http.get(_uri('/queues/$code/entries/me'), headers: _headers)));
+    } on ApiError catch (e) {
+      if (e.status == 404) return null;
+      rethrow;
+    }
+  }
+
+  /// Кто в очереди по порядку. Имена других видят только управляющие.
+  Future<List<Map<String, dynamic>>> entries(String code) async {
+    final body = _read(await _http.get(_uri('/queues/$code/entries'), headers: _headers)) as List;
+    return body.map(_map).toList();
+  }
+
+  /// served — «Следующий»; left — выйти; removed — забрать управление у первого через 10 минут.
+  Future<Map<String, dynamic>> setStatus(int entryId, String status) async {
+    final r = await _http.patch(_uri('/entries/$entryId'), headers: _headers, body: jsonEncode({'status': status}));
+    return _map(_read(r));
   }
 }
