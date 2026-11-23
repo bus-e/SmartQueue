@@ -16,7 +16,13 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements-dev.txt
+      - name: Статический анализ
+        run: |
+          ruff check .
+          ruff format --check .
+          mypy app
       - run: pytest
+
   client:
     runs-on: ubuntu-latest
     defaults:

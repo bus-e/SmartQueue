@@ -1,0 +1,19 @@
+# Статический анализ сервера: ruff (стиль и типовые ошибки) и mypy (типы).
+# Запуск: ruff check . && mypy app
+
+[tool.ruff]
+line-length = 110
+target-version = "py39"    # локально Python 3.9, в Docker и CI — 3.12
+
+[tool.ruff.lint]
+# E, W — стиль; F — ошибки (неиспользуемое, неопределённое); I — порядок импортов;
+# B — частые ошибки; UP — устаревший синтаксис
+select = ["E", "W", "F", "I", "B", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+"migrations/*" = ["E501"]   # длинные строки SQL
+
+[tool.mypy]
+python_version = "3.9"
+ignore_missing_imports = true
+check_untyped_defs = true

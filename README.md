@@ -32,6 +32,7 @@ API: http://localhost:8080/docs
 ```
 cd server
 pip install -r requirements-dev.txt
+ruff check . && mypy app
 pytest
 ```
 
