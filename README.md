@@ -44,3 +44,5 @@ flutter pub get
 flutter test
 flutter run -d chrome --dart-define=API_URL=http://localhost:8080
 ```
+
+Тест-кейсы для ручной проверки — docs/test-cases.md
